@@ -102,22 +102,25 @@ const products = [
   },
 ];
 
-let basket = [];
-
-const productsContainer = document.querySelector(".wrapper");
-const basketProductsContainer = document.querySelector(".basket-main");
-const openBasketBtn = document.querySelector(".open-basket");
-const basketScreen = document.querySelector(".basket-screen");
-const closeBasketBtn = document.querySelector(".close-basket");
+const wrapperElem = document.querySelector(".wrapper");
+const basketScreenElem = document.querySelector(".basket-screen");
+const closeXBasketElem = document.querySelector(".close-basket");
+const increaseBasketBtn = document.querySelector(".increase");
+const decreaseBasketBtn = document.querySelector(".decrease");
+const removeBaskeBtn = document.querySelector(".remove-button");
+const completeBasketBtn = document.querySelector(".complete-button");
+const clearBasketBtn = document.querySelector(".clear-button");
+const productsCountElem = document.querySelector(".products-count");
+const headerCountBasket = document.querySelector(".count");
+const shopingBasketLogo = document.querySelector(".open-basket");
+const basketMain = document.querySelector(".basket-main");
 const totalPriceElem = document.querySelector(".total-price");
-const clearBasketButton = document.querySelector(".clear-button");
-const productCountElem = document.querySelector(".count");
-const productCountElemInBasket = document.querySelector(".products-count");
+
+let basket = [];
 
 function showProducts() {
   products.forEach(function (product) {
-    productsContainer.insertAdjacentHTML(
-      "beforeend",
+    wrapperElem.insertAdjacentHTML("beforeend",
       `
         <article>
           <header class="product-header">
@@ -137,87 +140,86 @@ function showProducts() {
           </main>
           <footer class="product-footer">
             <p class="price">${product.price.toLocaleString()} ت</p>
-            <button class="add-to-cart" onclick="addProductToBasket(${
-              product.id
-            })">
+            <button class="add-to-cart" onclick="addProductToBasket(${product.id})">
               <i class="bx bx-cart-alt"></i>
               افزودن به سبد
             </button>
           </footer>
-        </article>
+        </article>      
       `
     );
   });
 }
-
 function addProductToBasket(productID) {
-  const mainProduct = products.find(function (product) {
+
+  const productAdd = products.find(function (product) {
     return product.id === productID;
   });
 
-  const isProductInBasket = basket.some(function (product) {
-    return product.id === mainProduct.id;
+  const existingIndex = basket.findIndex(function (product) {
+    return product.id === productID;
   });
-
-  if (isProductInBasket) {
-    increaseProductCount(mainProduct.id);
+  if (existingIndex !== -1) {
+    basket[existingIndex].count += 1;
   } else {
-    const basketNewProduct = {
-      id: mainProduct.id,
-      title: mainProduct.title,
-      description: mainProduct.description,
-      img: mainProduct.img,
-      price: mainProduct.price,
+    newProductAdd = {
+      id: productAdd.id,
+      title: productAdd.title,
+      price: productAdd.price,
+      img: productAdd.img,
+      description: productAdd.description,
       count: 1,
-    };
-
-    basket.push(basketNewProduct);
+    }
+    basket.push(newProductAdd);
   }
 
   saveBasketInLocalStorage();
   calculateTotalPrice();
-  showBasketProductsCount();
+  basketCountItem();
 }
 
 function saveBasketInLocalStorage() {
   localStorage.setItem("basket", JSON.stringify(basket));
 }
 
-function showBasketProducts() {
-  basketScreen.classList.remove("hidden");
+function getProductsFromLocalStorage() {
+  const localBasket = JSON.parse(localStorage.getItem("basket"));
+  if (localBasket) {
+    basket = localBasket;
+  }
+  showProducts();//زمانی که لود میشه صفحه باید نشون بده محصولات رو
+  basketCountItem();
 
-  basketProductsContainer.innerHTML = "";
+}
+
+function hideBasket() {
+  basketScreenElem.classList.add("hidden");
+}
+function showBasket() {
+  basketScreenElem.classList.remove("hidden");
+  basketMain.innerHTML = "";
 
   if (basket.length) {
     basket.forEach(function (product) {
-      basketProductsContainer.insertAdjacentHTML(
-        "beforeend",
+      basketMain.insertAdjacentHTML("beforeend",
         `
         <article class="basket-item">
           <div class="flex-center">
-            <img src="${product.img}" alt="" />
+            <img src=${product.img} />
             <div class="basket-item_details">
-              <p class="basket-item_title">
-                ${product.title}
-              </p>
-              <p class="basket-item_price">${product.price.toLocaleString()} ت</p>
+              <p class="basket-item_title">${product.title}</p>
+              <p class="basket-item_price">${product.price.toLocaleString()}</p>
             </div>
             <div>
               <div class="buttons">
-                <button class="increase" onclick="increaseProductCount(${
-                  product.id
-                })">
+                <button class="increase" onclick="increaseProductCount(${product.id})">
                   <i class="bx bx-plus"></i>
                 </button>
-                <button class="remove-button" onclick="removeProductFromBasket(${
-                  product.id
-                })">
+                <button class="remove-button" onclick="removeBasketProduct(${product.id})">
                   <!-- Boxicons trash icon -->
                   <i class="bx bx-trash"></i>
                 </button>
-                <button class="decrease" onclick="decreaseProductCount(${
-                  product.id
-                })">
+                <button class="decrease" onclick="decreaseProductCount(${product.id})">
                   <!-- Decrease icon -->
                   <i class="bx bx-minus"> </i>
                 </button>
@@ -229,102 +231,74 @@ function showBasketProducts() {
             </div>
           </div>
         </article>
-      `
-      );
+        `
+      )
     });
   } else {
-    basketProductsContainer.innerHTML = `
-      <p class="empty-basket">
-        سبد خرید شما خالی می باشد :(
-      </p>`;
+    basketMain.innerHTML =
+      `
+    <p class="empty-basket">
+     سبد خرید شما خالی می باشد :(
+    </p>
+    `
   }
-
   calculateTotalPrice();
-  showBasketProductsCount();
+  basketCountItem();
 }
-
+function calculateTotalPrice() {
+  let totalPrice = 0;
+  basket.forEach(function (product) {
+    totalPrice += product.price * product.count;
+  });
+  totalPriceElem.innerHTML = totalPrice.toLocaleString();
+}
+function clearBasket() {
+  basket = [];
+  saveBasketInLocalStorage();
+  showBasket();
+  calculateTotalPrice();
+}
+function basketCountItem() {
+  headerCountBasket.innerHTML = basket.length;
+  productsCountElem.innerHTML = `(${basket.length})`;
+}
+function removeBasketProduct(productID) {
+  const indexBasketItem = basket.findIndex(function (product) {
+    return product.id === productID;
+  });
+  basket.splice(indexBasketItem, 1);
+  saveBasketInLocalStorage();
+  calculateTotalPrice();
+  basketCountItem();
+  showBasket();
+}
 function increaseProductCount(productID) {
   const productToIncreaseCount = basket.find(function (product) {
     return product.id === productID;
   });
-
   productToIncreaseCount.count += 1;
-
   saveBasketInLocalStorage();
   calculateTotalPrice();
-  showBasketProducts();
+  showBasket();
 }
-
 function decreaseProductCount(productID) {
-  const productToIncreaseCount = basket.find(function (product) {
+  const productToDecreaseCount = basket.find(function (product) {
     return product.id === productID;
   });
+  productToDecreaseCount.count -= 1;
 
-  productToIncreaseCount.count -= 1;
-
-  if (!productToIncreaseCount.count) {
-    const productToRemoveFromBasket = basket.findIndex(function (product) {
+  if (productToDecreaseCount.count === 0) {
+    const productToRemoveFromBasketIndex = basket.findIndex(function (product) {
       return product.id === productID;
     });
-
-    basket.splice(productToRemoveFromBasket, 1);
+    basket.splice(productToRemoveFromBasketIndex, 1);
   }
-
   saveBasketInLocalStorage();
   calculateTotalPrice();
-  showBasketProducts();
+  showBasket();
 }
 
-function hideBasket() {
-  basketScreen.classList.add("hidden");
-}
-
-function getProductsFromLocalStorage() {
-  const localBasket = JSON.parse(localStorage.getItem("basket"));
-
-  if (localBasket) {
-    basket = localBasket;
-  }
-
-  showProducts();
-  showBasketProductsCount();
-}
-
-function calculateTotalPrice() {
-  let totalPrice = 0;
-
-  basket.forEach(function (product) {
-    totalPrice += product.price * product.count; // 1 -> product.count
-  });
-
-  totalPriceElem.innerHTML = totalPrice.toLocaleString();
-}
-
-function clearBasket() {
-  basket = [];
-  saveBasketInLocalStorage();
-  showBasketProducts();
-  calculateTotalPrice();
-  showBasketProductsCount();
-}
-
-function showBasketProductsCount() {
-  productCountElem.innerHTML = basket.length;
-  productCountElemInBasket.innerHTML = `(${basket.length})`;
-}
-
-function removeProductFromBasket(productID) {
-  const mainProductIndex = basket.findIndex(function (product) {
-    return product.id === productID;
-  });
-
-  basket.splice(mainProductIndex, 1);
-  saveBasketInLocalStorage();
-  calculateTotalPrice();
-  showBasketProductsCount();
-  showBasketProducts();
-}
-
-openBasketBtn.addEventListener("click", showBasketProducts);
-closeBasketBtn.addEventListener("click", hideBasket);
-clearBasketButton.addEventListener("click", clearBasket);
+closeXBasketElem.addEventListener("click", hideBasket);
+completeBasketBtn.addEventListener("click", hideBasket);
+shopingBasketLogo.addEventListener("click", showBasket);
+clearBasketBtn.addEventListener("click", clearBasket);
